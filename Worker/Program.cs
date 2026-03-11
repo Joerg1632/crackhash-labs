@@ -1,41 +1,76 @@
-var builder = WebApplication.CreateBuilder(args);
+using System.Security.Cryptography;
+using System.Text;
 
-// Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
-
-var app = builder.Build();
-
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+namespace Program;
+class Program
 {
-    app.MapOpenApi();
-}
-
-app.UseHttpsRedirection();
-
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
-app.MapGet("/weatherforecast", () =>
+    private static readonly char[] alphabet = "abcdefghijklmnopqrstuvwxyz0123456789".ToCharArray();
+    private static IEnumerable<string> GetAllMatches(int length)
     {
-        var forecast = Enumerable.Range(1, 5).Select(index =>
-                new WeatherForecast
-                (
-                    DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-                    Random.Shared.Next(-20, 55),
-                    summaries[Random.Shared.Next(summaries.Length)]
-                ))
-            .ToArray();
-        return forecast;
-    })
-    .WithName("GetWeatherForecast");
+        var indexes = new int[length];
+        var current = new char[length];
+        
+        for (var i=0; i < length; i++)
+            current[i] = alphabet[0];
+        do
+        {
+            yield return new string(current);
+        }
+        while (Increment(indexes, current));
+    }
 
-app.Run();
+    private static bool Increment(int[] indexes, char[] current)
+    {
+        var position = indexes.Length-1;
 
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
+        while (position >= 0)
+        {
+            indexes[position]++;
+            if (indexes[position] < alphabet.Length)
+            {
+                current[position] = alphabet[indexes[position]];
+                return true;
+            }
+            indexes[position] = 0;
+            current[position] = alphabet[0];
+            position--;
+        }
+        return false;
+    }
+
+    private static string ComputeMd5Hash(string s)
+    {
+        using (var md5Hash = MD5.Create())
+        {
+            var data = md5Hash.ComputeHash(Encoding.UTF8.GetBytes(s));
+            var sBuilder = new StringBuilder();
+            
+            foreach (var b in data)
+                sBuilder.Append(b.ToString("x2"));
+            
+            return sBuilder.ToString();
+        }
+    }
+
+    private static List<string> MakeBruteForce(string targetHash, int maxLength)
+    {
+        var results = new List<string>();
+        
+        foreach (var candidate in GetAllMatches(maxLength))
+        {
+            if (ComputeMd5Hash(candidate) == targetHash)
+                results.Add(candidate);
+        }
+        
+        return results;
+    }
+    
+    static void Main(string[] args)
+    {
+        var inputHash = Console.ReadLine();
+        var maxLength = Int32.Parse(Console.ReadLine()!);
+        
+        foreach (var res in MakeBruteForce(inputHash, maxLength))
+            Console.WriteLine(res);
+    }
 }
