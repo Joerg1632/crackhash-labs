@@ -1,76 +1,38 @@
-using System.Security.Cryptography;
-using System.Text;
+using System.Text.Json;
+using Microsoft.AspNetCore.Mvc;
+using Worker.Controllers;
+using Worker.Services;
+using System.Text.Json.Serialization;
+using Scalar.AspNetCore;
 
-namespace Program;
-class Program
+var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+        options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    });
+builder.Services.AddSingleton<ICrackService, CrackWorkerService>();
+builder.Services.AddHttpClient();
+builder.Services.AddOpenApi();
+
+var app = builder.Build();
+if (app.Environment.IsDevelopment())
 {
-    private static readonly char[] alphabet = "abcdefghijklmnopqrstuvwxyz0123456789".ToCharArray();
-    private static IEnumerable<string> GetAllMatches(int length)
-    {
-        var indexes = new int[length];
-        var current = new char[length];
-        
-        for (var i=0; i < length; i++)
-            current[i] = alphabet[0];
-        do
-        {
-            yield return new string(current);
-        }
-        while (Increment(indexes, current));
-    }
+    app.MapOpenApi();
 
-    private static bool Increment(int[] indexes, char[] current)
+    app.MapScalarApiReference(options =>
     {
-        var position = indexes.Length-1;
-
-        while (position >= 0)
-        {
-            indexes[position]++;
-            if (indexes[position] < alphabet.Length)
-            {
-                current[position] = alphabet[indexes[position]];
-                return true;
-            }
-            indexes[position] = 0;
-            current[position] = alphabet[0];
-            position--;
-        }
-        return false;
-    }
-
-    private static string ComputeMd5Hash(string s)
-    {
-        using (var md5Hash = MD5.Create())
-        {
-            var data = md5Hash.ComputeHash(Encoding.UTF8.GetBytes(s));
-            var sBuilder = new StringBuilder();
-            
-            foreach (var b in data)
-                sBuilder.Append(b.ToString("x2"));
-            
-            return sBuilder.ToString();
-        }
-    }
-
-    private static List<string> MakeBruteForce(string targetHash, int maxLength)
-    {
-        var results = new List<string>();
-        
-        foreach (var candidate in GetAllMatches(maxLength))
-        {
-            if (ComputeMd5Hash(candidate) == targetHash)
-                results.Add(candidate);
-        }
-        
-        return results;
-    }
-    
-    static void Main(string[] args)
-    {
-        var inputHash = Console.ReadLine();
-        var maxLength = Int32.Parse(Console.ReadLine()!);
-        
-        foreach (var res in MakeBruteForce(inputHash, maxLength))
-            Console.WriteLine(res);
-    }
+        options
+            .WithTitle("CrackHash Worker API")
+            .WithTheme(ScalarTheme.Moon)
+            .WithSidebar(true);
+    });
 }
+
+app.UseHttpsRedirection();
+app.UseRouting();
+app.MapControllers();
+
+app.Run();

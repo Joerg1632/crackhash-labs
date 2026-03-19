@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\yurav\\RiderProjects\\CrackHash\\Worker\\Worker.csproj": {}
+    "D:\\JetBrains Rider 2025.2.3\\RiderProjects\\crackhash-labs\\Worker\\Worker.csproj": {}
   },
   "projects": {
-    "C:\\Users\\yurav\\RiderProjects\\CrackHash\\Worker\\Worker.csproj": {
+    "D:\\JetBrains Rider 2025.2.3\\RiderProjects\\crackhash-labs\\Worker\\Worker.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\yurav\\RiderProjects\\CrackHash\\Worker\\Worker.csproj",
+        "projectUniqueName": "D:\\JetBrains Rider 2025.2.3\\RiderProjects\\crackhash-labs\\Worker\\Worker.csproj",
         "projectName": "Worker",
-        "projectPath": "C:\\Users\\yurav\\RiderProjects\\CrackHash\\Worker\\Worker.csproj",
+        "projectPath": "D:\\JetBrains Rider 2025.2.3\\RiderProjects\\crackhash-labs\\Worker\\Worker.csproj",
         "packagesPath": "C:\\Users\\yurav\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\yurav\\RiderProjects\\CrackHash\\Worker\\obj\\",
+        "outputPath": "D:\\JetBrains Rider 2025.2.3\\RiderProjects\\crackhash-labs\\Worker\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\yurav\\AppData\\Roaming\\NuGet\\NuGet.Config"
@@ -46,7 +46,11 @@
           "dependencies": {
             "Microsoft.AspNetCore.OpenApi": {
               "target": "Package",
-              "version": "[9.0.9, )"
+              "version": "[9.0.0, )"
+            },
+            "Scalar.AspNetCore": {
+              "target": "Package",
+              "version": "[2.1.5, )"
             }
           },
           "imports": [

@@ -1,0 +1,53 @@
+services:
+  manager:
+    build:
+      context: .
+      dockerfile: Manager/Dockerfile
+    ports:
+      - "5000:8080"
+    environment:
+      - WorkerUrls__0=http://worker1:8080
+      - WorkerUrls__1=http://worker2:8080
+      - WorkerUrls__2=http://worker3:8080
+    networks:
+      - crack-net
+
+  worker1:
+    build:
+      context: .
+      dockerfile: Worker/Dockerfile
+    environment:
+      - ASPNETCORE_URLS=http://+:8080
+      - ManagerUrl=http://manager:8080
+    depends_on:
+      - manager
+    networks:
+      - crack-net
+
+  worker2:
+    build:
+      context: .
+      dockerfile: Worker/Dockerfile
+    environment:
+      - ASPNETCORE_URLS=http://+:8080
+      - ManagerUrl=http://manager:8080
+    depends_on:
+      - manager
+    networks:
+      - crack-net
+
+  worker3:
+    build:
+      context: .
+      dockerfile: Worker/Dockerfile
+    environment:
+      - ASPNETCORE_URLS=http://+:8080
+      - ManagerUrl=http://manager:8080
+    depends_on:
+      - manager
+    networks:
+      - crack-net
+
+networks:
+  crack-net:
+    driver: bridge

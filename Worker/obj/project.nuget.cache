@@ -1,11 +1,12 @@
 {
   "version": 2,
-  "dgSpecHash": "tyciWp/DKKQ=",
+  "dgSpecHash": "Il3LlTluFEY=",
   "success": true,
-  "projectFilePath": "C:\\Users\\yurav\\RiderProjects\\CrackHash\\Worker\\Worker.csproj",
+  "projectFilePath": "D:\\JetBrains Rider 2025.2.3\\RiderProjects\\crackhash-labs\\Worker\\Worker.csproj",
   "expectedPackageFiles": [
-    "C:\\Users\\yurav\\.nuget\\packages\\microsoft.aspnetcore.openapi\\9.0.9\\microsoft.aspnetcore.openapi.9.0.9.nupkg.sha512",
-    "C:\\Users\\yurav\\.nuget\\packages\\microsoft.openapi\\1.6.17\\microsoft.openapi.1.6.17.nupkg.sha512"
+    "C:\\Users\\yurav\\.nuget\\packages\\microsoft.aspnetcore.openapi\\9.0.0\\microsoft.aspnetcore.openapi.9.0.0.nupkg.sha512",
+    "C:\\Users\\yurav\\.nuget\\packages\\microsoft.openapi\\1.6.17\\microsoft.openapi.1.6.17.nupkg.sha512",
+    "C:\\Users\\yurav\\.nuget\\packages\\scalar.aspnetcore\\2.1.5\\scalar.aspnetcore.2.1.5.nupkg.sha512"
   ],
   "logs": []
 }

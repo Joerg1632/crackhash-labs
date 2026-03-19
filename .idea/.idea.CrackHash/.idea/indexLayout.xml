@@ -5,6 +5,7 @@
     <explicitIncludes>
       <Path>.gitignore</Path>
       <Path>REAME.md</Path>
+      <Path>docker-compose.yml</Path>
     </explicitIncludes>
     <explicitExcludes />
   </component>

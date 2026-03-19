@@ -31,3 +31,36 @@ C:\Users\yurav\RiderProjects\CrackHash\Worker\obj\Debug\net9.0\refint\Worker.dll
 C:\Users\yurav\RiderProjects\CrackHash\Worker\obj\Debug\net9.0\Worker.pdb
 C:\Users\yurav\RiderProjects\CrackHash\Worker\obj\Debug\net9.0\Worker.genruntimeconfig.cache
 C:\Users\yurav\RiderProjects\CrackHash\Worker\obj\Debug\net9.0\ref\Worker.dll
+D:\JetBrains Rider 2025.2.3\RiderProjects\crackhash-labs\Worker\bin\Debug\net9.0\appsettings.Development.json
+D:\JetBrains Rider 2025.2.3\RiderProjects\crackhash-labs\Worker\bin\Debug\net9.0\appsettings.json
+D:\JetBrains Rider 2025.2.3\RiderProjects\crackhash-labs\Worker\bin\Debug\net9.0\Worker.staticwebassets.endpoints.json
+D:\JetBrains Rider 2025.2.3\RiderProjects\crackhash-labs\Worker\bin\Debug\net9.0\Worker.exe
+D:\JetBrains Rider 2025.2.3\RiderProjects\crackhash-labs\Worker\bin\Debug\net9.0\Worker.deps.json
+D:\JetBrains Rider 2025.2.3\RiderProjects\crackhash-labs\Worker\bin\Debug\net9.0\Worker.runtimeconfig.json
+D:\JetBrains Rider 2025.2.3\RiderProjects\crackhash-labs\Worker\bin\Debug\net9.0\Worker.dll
+D:\JetBrains Rider 2025.2.3\RiderProjects\crackhash-labs\Worker\bin\Debug\net9.0\Worker.pdb
+D:\JetBrains Rider 2025.2.3\RiderProjects\crackhash-labs\Worker\bin\Debug\net9.0\Microsoft.AspNetCore.OpenApi.dll
+D:\JetBrains Rider 2025.2.3\RiderProjects\crackhash-labs\Worker\bin\Debug\net9.0\Microsoft.OpenApi.dll
+D:\JetBrains Rider 2025.2.3\RiderProjects\crackhash-labs\Worker\obj\Debug\net9.0\Worker.csproj.AssemblyReference.cache
+D:\JetBrains Rider 2025.2.3\RiderProjects\crackhash-labs\Worker\obj\Debug\net9.0\rpswa.dswa.cache.json
+D:\JetBrains Rider 2025.2.3\RiderProjects\crackhash-labs\Worker\obj\Debug\net9.0\Worker.GeneratedMSBuildEditorConfig.editorconfig
+D:\JetBrains Rider 2025.2.3\RiderProjects\crackhash-labs\Worker\obj\Debug\net9.0\Worker.AssemblyInfoInputs.cache
+D:\JetBrains Rider 2025.2.3\RiderProjects\crackhash-labs\Worker\obj\Debug\net9.0\Worker.AssemblyInfo.cs
+D:\JetBrains Rider 2025.2.3\RiderProjects\crackhash-labs\Worker\obj\Debug\net9.0\Worker.csproj.CoreCompileInputs.cache
+D:\JetBrains Rider 2025.2.3\RiderProjects\crackhash-labs\Worker\obj\Debug\net9.0\Worker.MvcApplicationPartsAssemblyInfo.cs
+D:\JetBrains Rider 2025.2.3\RiderProjects\crackhash-labs\Worker\obj\Debug\net9.0\Worker.MvcApplicationPartsAssemblyInfo.cache
+D:\JetBrains Rider 2025.2.3\RiderProjects\crackhash-labs\Worker\obj\Debug\net9.0\Worker.sourcelink.json
+D:\JetBrains Rider 2025.2.3\RiderProjects\crackhash-labs\Worker\obj\Debug\net9.0\rjimswa.dswa.cache.json
+D:\JetBrains Rider 2025.2.3\RiderProjects\crackhash-labs\Worker\obj\Debug\net9.0\rjsmrazor.dswa.cache.json
+D:\JetBrains Rider 2025.2.3\RiderProjects\crackhash-labs\Worker\obj\Debug\net9.0\rjsmcshtml.dswa.cache.json
+D:\JetBrains Rider 2025.2.3\RiderProjects\crackhash-labs\Worker\obj\Debug\net9.0\scopedcss\bundle\Worker.styles.css
+D:\JetBrains Rider 2025.2.3\RiderProjects\crackhash-labs\Worker\obj\Debug\net9.0\staticwebassets.build.json
+D:\JetBrains Rider 2025.2.3\RiderProjects\crackhash-labs\Worker\obj\Debug\net9.0\staticwebassets.build.json.cache
+D:\JetBrains Rider 2025.2.3\RiderProjects\crackhash-labs\Worker\obj\Debug\net9.0\staticwebassets.development.json
+D:\JetBrains Rider 2025.2.3\RiderProjects\crackhash-labs\Worker\obj\Debug\net9.0\staticwebassets.build.endpoints.json
+D:\JetBrains Rider 2025.2.3\RiderProjects\crackhash-labs\Worker\obj\Debug\net9.0\Worker.csproj.Up2Date
+D:\JetBrains Rider 2025.2.3\RiderProjects\crackhash-labs\Worker\obj\Debug\net9.0\Worker.dll
+D:\JetBrains Rider 2025.2.3\RiderProjects\crackhash-labs\Worker\obj\Debug\net9.0\refint\Worker.dll
+D:\JetBrains Rider 2025.2.3\RiderProjects\crackhash-labs\Worker\obj\Debug\net9.0\Worker.pdb
+D:\JetBrains Rider 2025.2.3\RiderProjects\crackhash-labs\Worker\obj\Debug\net9.0\Worker.genruntimeconfig.cache
+D:\JetBrains Rider 2025.2.3\RiderProjects\crackhash-labs\Worker\obj\Debug\net9.0\ref\Worker.dll
