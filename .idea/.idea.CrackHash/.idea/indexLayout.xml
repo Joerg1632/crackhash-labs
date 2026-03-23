@@ -4,6 +4,7 @@
     <attachedFolders />
     <explicitIncludes>
       <Path>.gitignore</Path>
+      <Path>README.md</Path>
       <Path>REAME.md</Path>
       <Path>docker-compose.yml</Path>
     </explicitIncludes>
