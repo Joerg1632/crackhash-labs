@@ -64,3 +64,4 @@ D:\JetBrains Rider 2025.2.3\RiderProjects\crackhash-labs\Worker\obj\Debug\net9.0
 D:\JetBrains Rider 2025.2.3\RiderProjects\crackhash-labs\Worker\obj\Debug\net9.0\Worker.pdb
 D:\JetBrains Rider 2025.2.3\RiderProjects\crackhash-labs\Worker\obj\Debug\net9.0\Worker.genruntimeconfig.cache
 D:\JetBrains Rider 2025.2.3\RiderProjects\crackhash-labs\Worker\obj\Debug\net9.0\ref\Worker.dll
+D:\JetBrains Rider 2025.2.3\RiderProjects\crackhash-labs\Worker\bin\Debug\net9.0\Scalar.AspNetCore.dll

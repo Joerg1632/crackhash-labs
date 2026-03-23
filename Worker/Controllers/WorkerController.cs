@@ -30,4 +30,15 @@ public class WorkerController : ControllerBase
         
         return Ok();
     }
+
+    [HttpGet("health")]
+    public IActionResult Health()
+    {
+        var healthStatus = new HealthResponse()
+        {
+            Status = "ALIVE",
+        };
+        
+        return Ok(healthStatus);
+    } 
 }

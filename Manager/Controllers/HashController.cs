@@ -15,15 +15,26 @@ public class HashController : ControllerBase
     [HttpPost("crack")]
     public IActionResult Crack([FromBody] CrackRequest request)
     {
-        var id = _service.StartCrack(request);
-        return Ok(new { RequestId = id });
+        var requestId = _service.StartCrack(request);
+
+        var crackRequestId = new CrackRequestResponse()
+        {
+            RequestId = requestId,
+        };
+        return Ok(crackRequestId);
     }
 
     [HttpGet("status")]
     public IActionResult Status([FromQuery] string requestId)
     {
+        
         var (status, data) = _service.GetStatus(requestId);
-        return Ok(new { Status = status, Data = data });
+        
+        var crackStatus = new CrackStatusResponse()
+        {
+            Status = status,
+            Data = data
+        };
+        return Ok(crackStatus);
     }
-
 }

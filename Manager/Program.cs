@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Manager.Services;
 using System.Text.Json.Serialization;
+using Manager.Cache;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -15,6 +16,7 @@ builder.Services.AddControllers()
 builder.Services.AddSingleton<CrackManagerService>();
 builder.Services.AddHttpClient();
 builder.Services.AddOpenApi();
+builder.Services.AddSingleton<ResultCache>();
 
 var app = builder.Build();
 if (app.Environment.IsDevelopment())

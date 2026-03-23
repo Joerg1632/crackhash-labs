@@ -13,6 +13,7 @@ public class CrackWorkerService : ICrackService
 {
     private readonly HttpClient httpClient;
     private readonly string managerUrl;
+    private static readonly MD5 md5 = MD5.Create();
 
     public CrackWorkerService(IHttpClientFactory factory, IConfiguration config)
     {
@@ -58,9 +59,9 @@ public class CrackWorkerService : ICrackService
 
     private static string ComputeMd5Hash(string s)
     {
-        using (var md5Hash = MD5.Create())
+        lock (md5)
         {
-            var data = md5Hash.ComputeHash(Encoding.UTF8.GetBytes(s));
+            var data = md5.ComputeHash(Encoding.UTF8.GetBytes(s));
             var sBuilder = new StringBuilder();
             
             foreach (var b in data)
@@ -72,37 +73,24 @@ public class CrackWorkerService : ICrackService
 
     private string IndexToString(long index, int maxLength, char[] alphabet)
     {
-        if (index < 0 || maxLength < 1)
-            return string.Empty;
-
-        long cumulative = 0;
-        long power = 1;
+        var baseN = alphabet.Length;
         var length = 1;
-        
-        while (length <= maxLength)
-        {
-            long countAtThisLength = power * alphabet.Length;
-            if (cumulative + countAtThisLength > index)
-                break;
+        var count = baseN;
 
-            cumulative += countAtThisLength;
-            power *= alphabet.Length;
+        while (index >= count && length < maxLength)
+        {
+            index -= count;
             length++;
-
-            if (power < 0 || cumulative < 0)
-                return string.Empty;
+            count *= baseN;
         }
-        
-        long localIndex = index - cumulative;
-        var sb = new StringBuilder(length);
 
-        for (int i = 0; i < length; i++)
+        var chars = new char[length];
+        for (var i = length - 1; i >= 0; i--)
         {
-            int digit = (int)(localIndex % alphabet.Length);
-            sb.Insert(0, alphabet[digit]);
-            localIndex /= alphabet.Length;
+            chars[i] = alphabet[(int)(index % baseN)];
+            index /= baseN;
         }
 
-        return sb.ToString();
+        return new string(chars);
     }
 }
