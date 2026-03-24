@@ -10,3 +10,6 @@ obj/
 Thumbs.db
 **/bin/
 **/obj/
+*.http
+appsettings.Development.json
+Properties/
