@@ -1,5 +1,10 @@
-﻿using System.Security.Cryptography;
+﻿using System.Collections.Generic;
+using System.Net.Http;
+using System.Net.Http.Json;
+using System.Security.Cryptography;
 using System.Text;
+using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
 
 namespace Worker.Services;
 

@@ -1,8 +1,8 @@
 ﻿using System.Collections.Concurrent;
-using System.Net.Http.Json;
 using Manager.Cache;
 using Manager.DTOs;
 using Manager.Enums;
+using Manager.Models;
 
 namespace Manager.Services;
 
@@ -10,7 +10,10 @@ public class CrackManagerService
 {
     private readonly IHttpClientFactory httpClientFactory;
     private readonly ILogger<CrackManagerService> logger;
-    private readonly ResultCache cache;
+    private readonly Cache.Cache cache;
+    private readonly ConcurrentQueue<RequestState> requestQueue = new();
+    private readonly object locker = new();
+    RequestState? currentRequest;
     private readonly string[] workerUrls;
 
     private const string Alphabet = "abcdefghijklmnopqrstuvwxyz0123456789";
@@ -20,7 +23,7 @@ public class CrackManagerService
     public CrackManagerService(
         IHttpClientFactory factory,
         IConfiguration config,
-        ResultCache cache,
+        Cache.Cache cache,
         ILogger<CrackManagerService> logger)
     {
         httpClientFactory = factory;
@@ -41,51 +44,41 @@ public class CrackManagerService
         }
         
         var requestId = Guid.NewGuid().ToString();
-        var total = CalculateTotalCombinations(Alphabet.Length, request.MaxLength);
-        var workerAlive = ProbeWorkers();
-        var activeWorkers = workerAlive.Count(alive => alive);
 
         var state = new RequestState
         {
+            requestId = requestId,
             Hash = request.Hash,
             MaxLength = request.MaxLength,
-            WorkerAlive = workerAlive,
             Status = RequestStatus.IN_PROGRESS,
             CreatedAt = DateTime.UtcNow
         };
 
-        cache.Upsert(requestId, state);
-
-        lock (state)
-        {
-            if (activeWorkers == 0)
-            {
-                state.Status = RequestStatus.ERROR;
-                logger.LogError("Request {RequestId}: no alive workers detected at startup", requestId);
-                return requestId;
-            }
-
-            EnqueueBalancedRanges(requestId, state, total, activeWorkers, 0);
-            TryDispatchTasks(requestId, request, state);
-        }
+        requestQueue.Enqueue(state);
+        TryStartNext();
 
         return requestId;
     }
 
     public void ReportResult(string requestId, List<string> words, int workerId)
     {
-        if (!cache.TryGet(requestId, out var state) || state is null)
+        if (currentRequest == null || currentRequest.requestId != requestId)
             return;
+
+        var state = currentRequest;
+        var needDispatch = false;
 
         lock (state)
         {
+            if (!state.InProgress.TryRemove(workerId, out var task))
+                return;
+            
             state.FoundWords.AddRange(words);
+            task.Completed = true;
 
-            if (state.InProgress.TryRemove(workerId, out var task))
+            if (workerId >= 0 && workerId < state.WorkerAlive.Length)
             {
-                task.Completed = true;
-                if (workerId >= 0 && workerId < state.WorkerAlive.Length)
-                    state.WorkerAlive[workerId] = true;
+                state.WorkerAlive[workerId] = true;
 
                 logger.LogInformation(
                     "Request {RequestId}: [DONE] worker {WorkerId} finished {Start}-{Count}. Pending={Pending}, InProgress={InProgress}",
@@ -100,9 +93,25 @@ public class CrackManagerService
             if (state.PendingTasks.IsEmpty && state.InProgress.IsEmpty)
             {
                 state.Status = RequestStatus.READY;
+                
+                cache.Upsert(state.requestId, new CachedResult
+                (
+                    state.Hash,
+                    state.MaxLength,
+                    state.FoundWords,
+                    DateTime.UtcNow
+                ));
+                currentRequest = null;
+                TryStartNext();
+                
                 return;
             }
+            
+            needDispatch = true;
+        }
 
+        if (needDispatch)
+        {
             TryDispatchTasks(
                 requestId,
                 new CrackRequest(state.Hash, state.MaxLength),
@@ -110,61 +119,99 @@ public class CrackManagerService
         }
     }
 
-    public (RequestStatus Status, List<string>? Data) GetStatus(string requestId)
+    public void CheckTimeouts()
     {
-        if (!cache.TryGet(requestId, out var state) || state is null)
-            return (RequestStatus.ERROR, null);
+        if (currentRequest == null)
+            return;
+        
+        RequestState state;
+        lock (locker)
+        {
+            state = currentRequest;
+        }
+        var now = DateTime.UtcNow;
 
         lock (state)
         {
-            var now = DateTime.UtcNow;
-
-            foreach (var kv in state.InProgress)
+            foreach (var (workerId, rangeTask) in state.InProgress)
             {
-                var workerId = kv.Key;
-                var task = kv.Value;
-
-                if (task.StartedAt != null && now - task.StartedAt > WorkerTimeout)
+                if (rangeTask.StartedAt != null && now - rangeTask.StartedAt > WorkerTimeout)
                 {
                     if (state.InProgress.TryRemove(workerId, out var failedTask))
                     {
                         failedTask.WorkerId = null;
                         failedTask.StartedAt = null;
                         state.PendingTasks.Enqueue(failedTask);
+                        
                         if (workerId >= 0 && workerId < state.WorkerAlive.Length)
                             state.WorkerAlive[workerId] = false;
-
+                        
                         logger.LogWarning(
-                            "Request {RequestId}: [TIMEOUT] worker {WorkerId} lost {Start}-{Count}, requeue. Pending={Pending}, InProgress={InProgress}",
-                            requestId,
+                            "Request {RequestId}: [TIMEOUT] worker {WorkerId} lost {Start}-{Count}",
+                            state.requestId,
                             workerId,
                             failedTask.Start,
-                            failedTask.Count,
-                            state.PendingTasks.Count,
-                            state.InProgress.Count);
+                            failedTask.Count);
                     }
                 }
             }
-
+            
             TryDispatchTasks(
-                requestId,
+                state.requestId,
                 new CrackRequest(state.Hash, state.MaxLength),
                 state);
 
             if (now - state.CreatedAt > TotalTimeout)
             {
-                state.Status = RequestStatus.READY;
-                return (RequestStatus.READY, null);
-            }
-
-            if (state.PendingTasks.IsEmpty && state.InProgress.IsEmpty)
-                state.Status = RequestStatus.READY;
-            else if (state.FoundWords.Count > 0)
                 state.Status = RequestStatus.PARTIAL_READY;
-            else
-                state.Status = RequestStatus.IN_PROGRESS;
+                
+                currentRequest = null;
+                TryStartNext();
+            }
+        }
+    }
+    
+    public (RequestStatus Status, List<string>? Data) GetStatus(string requestId)
+    {
+        if (currentRequest != null && currentRequest.requestId == requestId)
+            return (currentRequest.Status, currentRequest.FoundWords);
 
-            return (state.Status, state.FoundWords);
+        return cache.TryGet(requestId, out var cachedResult) 
+            ? (RequestStatus.READY, cachedResult.FoundWords) 
+            : (RequestStatus.ERROR, null);
+    }
+    
+    private void TryStartNext()
+    {
+        lock (locker)
+        {
+            if (currentRequest != null)
+                return;
+
+            if (!requestQueue.TryDequeue(out var next))
+                return;
+            
+            currentRequest = next;
+            next.WorkerAlive = ProbeWorkers();
+            var activeWorkers = next.WorkerAlive.Count(x => x);
+            
+            if (activeWorkers == 0)
+            {
+                next.Status = RequestStatus.ERROR;
+                currentRequest = null;
+                return;
+            }
+            
+            EnqueueBalancedRanges(
+                next.requestId,
+                next,
+                CalculateTotalCombinations(Alphabet.Length, next.MaxLength),
+                activeWorkers);
+            
+            TryDispatchTasks(
+                next.requestId,
+                new CrackRequest(next.Hash, next.MaxLength),
+                next);
         }
     }
 
@@ -235,7 +282,7 @@ public class CrackManagerService
         }
     }
 
-    private int? FindIdleWorker(RequestState state)
+    private static int? FindIdleWorker(RequestState state)
     {
         for (var i = 0; i < state.WorkerAlive.Length; i++)
         {
@@ -246,16 +293,11 @@ public class CrackManagerService
         return null;
     }
 
-    private void EnqueueBalancedRanges(
-        string requestId,
-        RequestState state,
-        long total,
-        int workersCount,
-        long startOffset)
+    private void EnqueueBalancedRanges(string requestId, RequestState state, long total, int workersCount)
     {
+        long currentStart = 0;
         var baseChunk = total / workersCount;
         var remainder = total % workersCount;
-        var currentStart = startOffset;
 
         for (var i = 0; i < workersCount; i++)
         {
@@ -309,18 +351,18 @@ public class CrackManagerService
 
     private static long CalculateTotalCombinations(int alphabetSize, int maxLength)
     {
-        long total = 0;
-        long power = 1;
+        long totalCombinations = 0;
+        long alphabetPower = 1;
 
         for (var len = 1; len <= maxLength; len++)
         {
-            power *= alphabetSize;
-            total += power;
+            alphabetPower *= alphabetSize;
+            totalCombinations += alphabetPower;
 
-            if (power < 0 || total < 0)
+            if (alphabetPower < 0 || totalCombinations < 0)
                 return long.MaxValue;
         }
 
-        return total;
+        return totalCombinations;
     }
 }

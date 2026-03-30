@@ -16,11 +16,8 @@ public class HashController : ControllerBase
     public IActionResult Crack([FromBody] CrackRequest request)
     {
         var requestId = _service.StartCrack(request);
-
-        var crackRequestId = new CrackRequestResponse()
-        {
-            RequestId = requestId,
-        };
+        var crackRequestId = new CrackRequestResponse(requestId);
+        
         return Ok(crackRequestId);
     }
 
@@ -29,12 +26,8 @@ public class HashController : ControllerBase
     {
         
         var (status, data) = _service.GetStatus(requestId);
-        
-        var crackStatus = new CrackStatusResponse()
-        {
-            Status = status,
-            Data = data
-        };
+        var crackStatus = new CrackStatusResponse(status,  data);
+
         return Ok(crackStatus);
     }
 }

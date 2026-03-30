@@ -1,4 +1,4 @@
-﻿namespace Worker.Models;
+﻿namespace Worker.DTOs;
 
 public record WorkerTaskRequest(
     string Hash, 
