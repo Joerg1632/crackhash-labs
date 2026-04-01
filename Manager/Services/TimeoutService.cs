@@ -2,19 +2,18 @@ namespace Manager.Services;
 
 public class TimeoutService : BackgroundService
 {
-    private readonly CrackManagerService manager;
+    private readonly ICrackManagerService crackManagerService;
 
-    public TimeoutService(CrackManagerService manager)
+    public TimeoutService(ICrackManagerService manager)
     {
-        this.manager = manager;
+        crackManagerService = manager;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         while (!stoppingToken.IsCancellationRequested)
         {
-            manager.CheckTimeouts();
-            
+            crackManagerService.CheckTimeouts();
             await Task.Delay(1000, stoppingToken);
         }
     }

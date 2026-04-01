@@ -1,11 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Net.Http;
-using System.Net.Http.Json;
-using System.Security.Cryptography;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Configuration;
-
+﻿using Worker.Utils;
 namespace Worker.Services;
 
 public interface ICrackService
@@ -18,7 +11,6 @@ public class CrackWorkerService : ICrackService
 {
     private readonly HttpClient httpClient;
     private readonly string managerUrl;
-    private static readonly MD5 md5 = MD5.Create();
 
     public CrackWorkerService(IHttpClientFactory factory, IConfiguration config)
     {
@@ -26,7 +18,12 @@ public class CrackWorkerService : ICrackService
         managerUrl = config["ManagerUrl"] ?? "http://manager:8080";
     }
     
-    public Task<List<string>> CrackRangeAsync(string targetHash, int maxLength, long startIndex, long count, string alphabetStr)
+    public Task<List<string>> CrackRangeAsync(
+        string targetHash, 
+        int maxLength, 
+        long startIndex, 
+        long count, 
+        string alphabetStr)
     {
         var alphabet = alphabetStr.ToCharArray();
         var results = new List<string>();
@@ -34,12 +31,12 @@ public class CrackWorkerService : ICrackService
         for (var i = 0; i < count; i++)
         {
             var globalIndex = startIndex + i;
-            var candidate = IndexToString(globalIndex, maxLength, alphabet);
+            var candidate = HashingHelper.IndexToString(globalIndex, maxLength, alphabet);
 
             if (string.IsNullOrEmpty(candidate))
                 continue;
             
-            if (ComputeMd5Hash(candidate) == targetHash)
+            if (HashingHelper.ComputeMd5Hash(candidate) == targetHash)
                 results.Add(candidate);
         }
         
@@ -60,42 +57,5 @@ public class CrackWorkerService : ICrackService
             payload);
 
         response.EnsureSuccessStatusCode();
-    }
-
-    private static string ComputeMd5Hash(string s)
-    {
-        lock (md5)
-        {
-            var data = md5.ComputeHash(Encoding.UTF8.GetBytes(s));
-            var sBuilder = new StringBuilder();
-            
-            foreach (var b in data)
-                sBuilder.Append(b.ToString("x2"));
-            
-            return sBuilder.ToString();
-        }
-    }
-
-    private string IndexToString(long index, int maxLength, char[] alphabet)
-    {
-        var baseN = alphabet.Length;
-        var length = 1;
-        var count = baseN;
-
-        while (index >= count && length < maxLength)
-        {
-            index -= count;
-            length++;
-            count *= baseN;
-        }
-
-        var chars = new char[length];
-        for (var i = length - 1; i >= 0; i--)
-        {
-            chars[i] = alphabet[(int)(index % baseN)];
-            index /= baseN;
-        }
-
-        return new string(chars);
     }
 }
