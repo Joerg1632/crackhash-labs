@@ -1,4 +1,6 @@
-﻿namespace Manager.DTOs;
+﻿using System;
+
+namespace Manager.DTOs;
 
 public class RangeTask
 {

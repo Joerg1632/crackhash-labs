@@ -1,0 +1,15 @@
+bin/
+obj/
+.idea/
+.vs/
+*.user
+*.suo
+*.DotSettings.user
+*.log
+.DS_Store
+Thumbs.db
+**/bin/
+**/obj/
+*.http
+appsettings.Development.json
+Properties/

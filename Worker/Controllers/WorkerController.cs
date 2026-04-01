@@ -1,5 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Worker.Models;
+﻿using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
+using Worker.DTOs;
 using Worker.Services;
 
 namespace Worker.Controllers;
@@ -34,10 +35,7 @@ public class WorkerController : ControllerBase
     [HttpGet("health")]
     public IActionResult Health()
     {
-        var healthStatus = new HealthResponse()
-        {
-            Status = "ALIVE",
-        };
+        var healthStatus = new HealthResponse("ALIVE");
         
         return Ok(healthStatus);
     } 

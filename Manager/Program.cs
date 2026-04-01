@@ -1,7 +1,12 @@
 using System.Text.Json;
-using Manager.Services;
 using System.Text.Json.Serialization;
+using Manager;
 using Manager.Cache;
+using Manager.Core.Dispatch;
+using Manager.Core.Tasks;
+using Manager.Core.Timeout;
+using Manager.Core.Workers;
+using Manager.Services;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -13,12 +18,23 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
         options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
     });
-builder.Services.AddSingleton<CrackManagerService>();
+
 builder.Services.AddHttpClient();
-builder.Services.AddOpenApi();
-builder.Services.AddSingleton<ResultCache>();
+
+builder.Services.Configure<CrackManagerSettings>(
+    builder.Configuration.GetSection("CrackManager"));
+
+builder.Services.AddSingleton<Cache>();
+builder.Services.AddSingleton<TaskSplitter>();
+builder.Services.AddSingleton<WorkerProbe>();
+builder.Services.AddHostedService(sp => sp.GetRequiredService<WorkerProbe>());
+builder.Services.AddSingleton<WorkerDispatcher>();
+builder.Services.AddSingleton<TimeoutManager>();
+builder.Services.AddSingleton<ICrackManagerService, CrackManagerService>();
+builder.Services.AddHostedService<TimeoutService>();
 
 var app = builder.Build();
+
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();

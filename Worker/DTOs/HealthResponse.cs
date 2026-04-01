@@ -1,6 +1,3 @@
-﻿namespace Worker.Models;
+﻿namespace Worker.DTOs;
 
-public class HealthResponse
-{
-    public string Status { get; set; }
-}
+public record HealthResponse(string Status);
