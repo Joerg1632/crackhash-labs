@@ -19,7 +19,7 @@ public class WorkerDispatcher
         httpClientFactory = factory;
         settings = options.Value;
     }
-    
+     
     public void TryDispatchTasks(CrackRequest request, RequestState state)
     {
         var client = httpClientFactory.CreateClient();

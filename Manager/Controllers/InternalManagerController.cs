@@ -8,14 +8,14 @@ namespace Manager.Controllers;
 [Route("internal/api/manager/hash/crack")]
 public class InternalManagerController : ControllerBase
 {
-    private readonly ICrackManagerService service;
+    private readonly ICrackManagerService crackManagerService;
     
-    public InternalManagerController(ICrackManagerService service) => this.service = service;
+    public InternalManagerController(ICrackManagerService service) => crackManagerService = service;
     
     [HttpPatch("request")]
     public IActionResult Report([FromBody] ReportDto report)
     {
-        service.ReportResult(report.RequestId, report.FoundWords ?? [], report.WorkerId);
+        crackManagerService.ReportResult(report.RequestId, report.FoundWords ?? [], report.WorkerId);
         return Ok();
     }
 }
