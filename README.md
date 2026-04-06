@@ -6,7 +6,10 @@
 - **RabbitMQ** — надёжная доставка задач и результатов между компонентами
 - **Отказоустойчивость** менеджера, воркеров и очереди
 
----
+## Архитектура
+
+<img width="531" height="251" alt="architecture" src="https://github.com/user-attachments/assets/a9c88f10-e62b-4ea1-b266-abe94c861bce" />
+
 
 ## Очереди RabbitMQ
 
