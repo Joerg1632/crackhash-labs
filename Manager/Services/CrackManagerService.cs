@@ -1,10 +1,8 @@
-﻿using System.Collections.Concurrent;
-using Manager.Core.Dispatch;
-using Manager.Core.Workers;
-using Manager.Core.Tasks;
-using Manager.Core.Timeout;
+﻿using Manager.Core.Tasks;
 using Manager.DTOs;
 using Manager.Enums;
+using Manager.Infrastructure.Mongo;
+using Manager.Infrastructure.RabbitMQ;
 using Manager.Models;
 using Microsoft.Extensions.Options;
 
@@ -13,184 +11,118 @@ namespace Manager.Services;
 public class CrackManagerService : ICrackManagerService
 {
     private readonly ILogger<CrackManagerService> logger;
-    private readonly Cache.Cache cache;
-    private readonly ConcurrentQueue<RequestState> requestQueue = new();
+    private readonly MongoRequestRepository repository;
+    private readonly RabbitMqPublisher publisher;
     private readonly TaskSplitter taskSplitter;
-    private readonly WorkerDispatcher workerDispatcher;
-    private readonly TimeoutManager timeoutManager;
-    private readonly WorkerProbe workerProbe;
-    private readonly CrackManagerSettings  settings;
-    private readonly object locker = new();
-    RequestState? currentRequest;
+    private readonly CrackManagerSettings settings;
 
     public CrackManagerService(
-        Cache.Cache cache,
         ILogger<CrackManagerService> logger,
         IOptions<CrackManagerSettings> options, 
         TaskSplitter taskSplitter, 
-        WorkerDispatcher workerDispatcher, 
-        TimeoutManager timeoutManager, 
-        WorkerProbe workerProbe)
+        MongoRequestRepository repository,
+        RabbitMqPublisher publisher)
     {
-        this.cache = cache;
         this.logger = logger;
         this.taskSplitter = taskSplitter;
-        this.workerDispatcher = workerDispatcher;
-        this.timeoutManager = timeoutManager;
-        this.workerProbe = workerProbe;
+        this.repository = repository;
+        this.publisher = publisher;
         settings = options.Value;
     }
 
-    public string StartCrack(CrackRequest request)
+    public async Task<string> StartCrackAsync(CrackRequest request)
     {
-        if (cache.TryGetByHashAndLength(request.Hash, request.MaxLength, out var cachedRequestId, out _)
-            && cachedRequestId is not null)
+        var existing = await repository.FindByHashAndLengthAsync(request.Hash, request.MaxLength);
+        if (existing != null)
         {
             logger.LogInformation(
                 "Cache hit for hash request. Returning existing requestId {RequestId}",
-                cachedRequestId);
-            return cachedRequestId;
+                existing.RequestId);
+            
+            return existing.RequestId;
         }
-        
-        var requestId = Guid.NewGuid().ToString();
 
+        var requestId = Guid.NewGuid().ToString();
         var state = new RequestState
         {
-            requestId = requestId,
+            RequestId = requestId,
             Hash = request.Hash,
             MaxLength = request.MaxLength,
             Status = RequestStatus.IN_PROGRESS,
             CreatedAt = DateTime.UtcNow
         };
 
-        requestQueue.Enqueue(state);
-        TryStartNext();
-
+        await repository.InsertAsync(state);
+        logger.LogInformation("Request {RequestId}: saved to MongoDB", requestId);
+        await PublishTasksAsync(state);
+        
         return requestId;
     }
 
-    public void ReportResult(string requestId, List<string> words, int workerId)
+    public async Task PublishTasksAsync(RequestState state)
     {
-        if (currentRequest == null || currentRequest.requestId != requestId)
-            return;
+        var total = taskSplitter.CalculateTotalCombinations(
+            settings.Alphabet.Length,
+            state.MaxLength);
+        
+        var tasks = taskSplitter.GetBalancedRanges(total, settings.TaskParts)
+            .Select(r => new TaskMessage(
+                state.RequestId,
+                state.Hash,
+                state.MaxLength,
+                r.Start,
+                r.Count,
+                settings.Alphabet))
+            .ToList();
 
-        var state = currentRequest;
-        var needDispatch = false;
-
-        lock (state)
-        {
-            if (!state.InProgress.TryRemove(workerId, out var task))
-                return;
-            
-            state.FoundWords.AddRange(words);
-            task.Completed = true;
-
-            if (workerId >= 0 && workerId < state.WorkerAlive.Length)
-            {
-                state.WorkerAlive[workerId] = true;
-
-                logger.LogInformation(
-                    "Request {RequestId}: [DONE] worker {WorkerId} finished {Start}-{Count}. Pending={Pending}, InProgress={InProgress}",
-                    requestId,
-                    workerId,
-                    task.Start,
-                    task.Count,
-                    state.PendingTasks.Count,
-                    state.InProgress.Count);
-            }
-
-            if (state.PendingTasks.IsEmpty && state.InProgress.IsEmpty)
-            {
-                state.Status = RequestStatus.READY;
-                
-                cache.Upsert(state.requestId, new CachedResult
-                (
-                    state.Hash,
-                    state.MaxLength,
-                    state.FoundWords,
-                    DateTime.UtcNow
-                ));
-                currentRequest = null;
-                TryStartNext();
-                
-                return;
-            }
-            
-            needDispatch = true;
-        }
-
-        if (needDispatch)
-        {
-            workerDispatcher.TryDispatchTasks(
-                new CrackRequest(state.Hash, state.MaxLength),
-                state);
-        }
+        await publisher.PublishTaskAsync(tasks);
+        
+        logger.LogInformation(
+            "Request {RequestId}: published {Count} tasks to RabbitMQ", 
+            state.RequestId,
+            tasks.Count);
     }
-    
+
     public (RequestStatus Status, List<string>? Data) GetStatus(string requestId)
     {
-        if (currentRequest != null && currentRequest.requestId == requestId)
-            return (currentRequest.Status, currentRequest.FoundWords);
+        var state = repository.GetAsync(requestId).GetAwaiter().GetResult();
 
-        return cache.TryGet(requestId, out var cachedResult) 
-            ? (RequestStatus.READY, cachedResult.FoundWords) 
-            : (RequestStatus.ERROR, null);
+        if (state == null)
+            return (RequestStatus.ERROR, null);
+
+        return (state.Status, state.FoundWords);
     }
     
-    public void CheckTimeouts()
+    public async Task ReportResultAsync(string requestId, List<string> words)
     {
-        if (currentRequest == null)
+        var state = await repository.GetAsync(requestId);
+        if (state == null || state.Status != RequestStatus.IN_PROGRESS)
             return;
 
-        RequestState state;
-        lock (locker)
+        await repository.UpdateAsync(requestId, words ?? []);
+
+        state = await repository.GetAsync(requestId);
+    
+        if (state!.CompletedTasks >= settings.TaskParts)
         {
-            state = currentRequest;
-        }
-
-        var shouldStartNext = timeoutManager.CheckTimeouts(state);
-
-        if (shouldStartNext)
-        {
-            lock (locker)
-            {
-                currentRequest = null;
-            }
-
-            TryStartNext();
+            var uniqueWords = state.FoundWords.Distinct().ToList();
+            await repository.SetStatusAsync(requestId, RequestStatus.READY, uniqueWords);
+            logger.LogInformation("Request {RequestId}: READY, found {Count} words",
+                requestId, state.FoundWords.Count);
         }
     }
     
-    private void TryStartNext()
+    public async Task RecoverInProgressRequestsAsync()
     {
-        lock (locker)
+        var inProgress = await repository.FindInProgressAsync();
+    
+        foreach (var state in inProgress)
         {
-            if (currentRequest != null)
-                return;
-
-            if (!requestQueue.TryDequeue(out var next))
-                return;
+            logger.LogInformation(
+                "Request {RequestId}: recovering, republishing tasks",
+                state.RequestId);
             
-            currentRequest = next;
-            next.WorkerAlive = workerProbe.GetCachedState();
-            var activeWorkers = next.WorkerAlive.Count(x => x);
-            
-            if (activeWorkers == 0)
-            {
-                next.Status = RequestStatus.ERROR;
-                currentRequest = null;
-                return;
-            }
-            
-            taskSplitter.EnqueueBalancedRanges(
-                next.requestId,
-                next,
-                taskSplitter.CalculateTotalCombinations(settings.Alphabet.Length, next.MaxLength),
-                activeWorkers);
-            
-            workerDispatcher.TryDispatchTasks(
-                new CrackRequest(next.Hash, next.MaxLength),
-                next);
+            await PublishTasksAsync(state);
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿namespace Manager.DTOs;
+﻿namespace Worker.DTOs;
 
 public class ReportDto
 {

@@ -1,24 +1,17 @@
 ﻿using Manager.DTOs;
-using Manager.Models;
 
 namespace Manager.Core.Tasks;
 
 public class TaskSplitter
 {
-    private readonly ILogger<TaskSplitter> logger;
-
-    public TaskSplitter(ILogger<TaskSplitter> logger)
+    public List<RangeTask> GetBalancedRanges(long total, int partsCount)
     {
-        this.logger = logger;
-    }
-    
-    public void EnqueueBalancedRanges(string requestId, RequestState state, long total, int workersCount)
-    {
+        var ranges = new List<RangeTask>();
         long currentStart = 0;
-        var baseChunk = total / workersCount;
-        var remainder = total % workersCount;
+        var baseChunk = total / partsCount;
+        var remainder = total % partsCount;
 
-        for (var i = 0; i < workersCount; i++)
+        for (var i = 0; i < partsCount; i++)
         {
             var count = baseChunk + (i < remainder ? 1 : 0);
             if (count <= 0)
@@ -29,17 +22,12 @@ public class TaskSplitter
                 Start = currentStart,
                 Count = count
             };
-
-            state.PendingTasks.Enqueue(task);
-            logger.LogInformation(
-                "Request {RequestId}: [CREATE] range {Start}-{Count} by workers={WorkersCount}",
-                requestId,
-                task.Start,
-                task.Count,
-                workersCount);
-
+            
+            ranges.Add(task);
             currentStart += count;
         }
+        
+        return ranges;
     }
 
     public long CalculateTotalCombinations(int alphabetSize, int maxLength)

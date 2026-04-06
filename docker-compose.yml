@@ -6,9 +6,17 @@ services:
     ports:
       - "5000:8080"
     environment:
-      - WorkerUrls__0=http://worker1:8080
-      - WorkerUrls__1=http://worker2:8080
-      - WorkerUrls__2=http://worker3:8080
+      - RabbitMQ__Host=rabbitmq
+      - MongoDB__ConnectionString=mongodb://mongo1:27017,mongo2:27017,mongo3:27017/?replicaSet=rs0
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      mongo1:
+        condition: service_started
+      mongo2:
+        condition: service_started
+      mongo3:
+        condition: service_started
     networks:
       - crack-net
 
@@ -18,9 +26,10 @@ services:
       dockerfile: Worker/Dockerfile
     environment:
       - ASPNETCORE_URLS=http://+:8080
-      - ManagerUrl=http://manager:8080
+      - RabbitMQ__Host=rabbitmq
     depends_on:
-      - manager
+      rabbitmq:
+        condition: service_healthy
     networks:
       - crack-net
 
@@ -30,9 +39,10 @@ services:
       dockerfile: Worker/Dockerfile
     environment:
       - ASPNETCORE_URLS=http://+:8080
-      - ManagerUrl=http://manager:8080
+      - RabbitMQ__Host=rabbitmq
     depends_on:
-      - manager
+      rabbitmq:
+        condition: service_healthy
     networks:
       - crack-net
 
@@ -42,11 +52,64 @@ services:
       dockerfile: Worker/Dockerfile
     environment:
       - ASPNETCORE_URLS=http://+:8080
-      - ManagerUrl=http://manager:8080
+      - RabbitMQ__Host=rabbitmq
     depends_on:
-      - manager
+      rabbitmq:
+        condition: service_healthy
     networks:
       - crack-net
+    
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: [ "CMD", "rabbitmq-diagnostics", "ping" ]
+      interval: 5s
+      timeout: 10s
+      retries: 10
+    networks:
+      - crack-net
+  
+  mongo1:
+    image: mongo:7
+    command: --replSet rs0
+    networks:
+      - crack-net
+
+  mongo2:
+    image: mongo:7
+    command: --replSet rs0
+    networks:
+      - crack-net
+
+  mongo3:
+    image: mongo:7
+    command: --replSet rs0
+    networks:
+      - crack-net
+
+  mongo-init:
+    image: mongo:7
+    depends_on:
+      - mongo1
+      - mongo2
+      - mongo3
+    networks:
+      - crack-net
+    restart: "no"
+    entrypoint: >
+      mongosh --host mongo1 --eval "
+        rs.initiate({
+          _id: 'rs0',
+          members: [
+            { _id: 0, host: 'mongo1:27017' },
+            { _id: 1, host: 'mongo2:27017' },
+            { _id: 2, host: 'mongo3:27017' }
+          ]
+        })
+      "
 
 networks:
   crack-net:

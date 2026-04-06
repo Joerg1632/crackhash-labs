@@ -13,9 +13,9 @@ public class HashController : ControllerBase
     public HashController(ICrackManagerService service) => crackManagerService = service;
 
     [HttpPost("crack")]
-    public IActionResult Crack([FromBody] CrackRequest request)
+    public async Task<IActionResult> Crack([FromBody] CrackRequest request)
     {
-        var requestId = crackManagerService.StartCrack(request);
+        var requestId = crackManagerService.StartCrackAsync(request).GetAwaiter().GetResult();
         var crackRequestId = new CrackRequestResponse(requestId);
         
         return Ok(crackRequestId);

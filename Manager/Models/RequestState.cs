@@ -1,18 +1,20 @@
-﻿using Manager.DTOs;
-using Manager.Enums;
+﻿using Manager.Enums;
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
+
 namespace Manager.Models;
-using System.Collections.Concurrent;
 
 public class RequestState
 {
-    public string requestId { get; set; }
-    public string Hash { get; set; } = string.Empty;
+    [BsonId]
+    [BsonRepresentation(BsonType.String)]
+    public string RequestId { get; set; }
+    public string Hash { get; set; }
     public int MaxLength { get; set; }
-    public RequestStatus Status { get; set; } = RequestStatus.IN_PROGRESS; 
+    public RequestStatus Status { get; set; } = RequestStatus.IN_PROGRESS;
+    [BsonElement("FoundWords")]
     public List<string> FoundWords { get; set; } = new();
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime CreatedAt { get; set; }
     
-    public bool[] WorkerAlive { get; set; } = Array.Empty<bool>();
-    public ConcurrentQueue<RangeTask> PendingTasks { get; set; } = new();
-    public ConcurrentDictionary<int, RangeTask> InProgress { get; set; } = new();
+    public int CompletedTasks { get; set; }
 }

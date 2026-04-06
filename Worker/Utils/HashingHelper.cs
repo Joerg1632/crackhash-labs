@@ -5,20 +5,15 @@ namespace Worker.Utils;
 
 public class HashingHelper
 {
-    private static readonly MD5 md5 = MD5.Create();
     
     public static string ComputeMd5Hash(string s)
     {
-        lock (md5)
-        {
-            var data = md5.ComputeHash(Encoding.UTF8.GetBytes(s));
-            var sBuilder = new StringBuilder();
-            
-            foreach (var b in data)
-                sBuilder.Append(b.ToString("x2"));
-            
-            return sBuilder.ToString();
-        }
+        using var md5 = MD5.Create();
+        var data = md5.ComputeHash(Encoding.UTF8.GetBytes(s));
+        var sb = new StringBuilder();
+        foreach (var b in data)
+            sb.Append(b.ToString("x2"));
+        return sb.ToString();
     }
 
     public static string IndexToString(long index, int maxLength, char[] alphabet)

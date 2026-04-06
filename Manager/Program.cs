@@ -1,11 +1,9 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Manager;
-using Manager.Cache;
-using Manager.Core.Dispatch;
 using Manager.Core.Tasks;
-using Manager.Core.Timeout;
-using Manager.Core.Workers;
+using Manager.Infrastructure.Mongo;
+using Manager.Infrastructure.RabbitMQ;
 using Manager.Services;
 using Scalar.AspNetCore;
 
@@ -19,22 +17,20 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
     });
 
-builder.Services.AddHttpClient();
-
 builder.Services.Configure<CrackManagerSettings>(
     builder.Configuration.GetSection("CrackManager"));
+builder.Services.Configure<RabbitMqSettings>(
+    builder.Configuration.GetSection("RabbitMQ"));
+builder.Services.Configure<MongoSettings>(
+    builder.Configuration.GetSection("MongoDB"));
 
-builder.Services.AddSingleton<Cache>();
+builder.Services.AddSingleton<MongoRequestRepository>();
+builder.Services.AddSingleton<RabbitMqPublisher>();
+builder.Services.AddHostedService<RabbitMqConsumer>();
 builder.Services.AddSingleton<TaskSplitter>();
-builder.Services.AddSingleton<WorkerProbe>();
-builder.Services.AddHostedService(sp => sp.GetRequiredService<WorkerProbe>());
-builder.Services.AddSingleton<WorkerDispatcher>();
-builder.Services.AddSingleton<TimeoutManager>();
 builder.Services.AddSingleton<ICrackManagerService, CrackManagerService>();
-builder.Services.AddHostedService<TimeoutService>();
 
 var app = builder.Build();
-
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
@@ -54,5 +50,8 @@ app.UseCors(policy => policy
     .AllowAnyOrigin()
     .AllowAnyMethod()
     .AllowAnyHeader());
+
+var crackManager = app.Services.GetRequiredService<ICrackManagerService>();
+await crackManager.RecoverInProgressRequestsAsync();
 
 app.Run();
