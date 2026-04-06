@@ -86,11 +86,8 @@ public class CrackManagerService : ICrackManagerService
     public (RequestStatus Status, List<string>? Data) GetStatus(string requestId)
     {
         var state = repository.GetAsync(requestId).GetAwaiter().GetResult();
-
-        if (state == null)
-            return (RequestStatus.ERROR, null);
-
-        return (state.Status, state.FoundWords);
+        
+        return state == null ? (RequestStatus.ERROR, null) : (state.Status, state.FoundWords);
     }
     
     public async Task ReportResultAsync(string requestId, List<string> words)

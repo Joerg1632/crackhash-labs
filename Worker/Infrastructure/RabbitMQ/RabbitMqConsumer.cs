@@ -66,7 +66,7 @@ public class RabbitMqConsumer : BackgroundService
 
                 if (task == null)
                 {
-                    await channel.BasicNackAsync(ea.DeliveryTag, false, false);
+                    await channel.BasicNackAsync(ea.DeliveryTag, false, false, stoppingToken);
                     return;
                 }
 
@@ -87,7 +87,7 @@ public class RabbitMqConsumer : BackgroundService
                     FoundWords = foundWords
                 });
 
-                await channel.BasicAckAsync(ea.DeliveryTag, false);
+                await channel.BasicAckAsync(ea.DeliveryTag, false, stoppingToken);
 
                 logger.LogInformation(
                     "Request {RequestId}: task done, found {Count} words",
@@ -96,7 +96,7 @@ public class RabbitMqConsumer : BackgroundService
             catch (Exception ex)
             {
                 logger.LogError(ex, "Failed to process task");
-                await channel.BasicNackAsync(ea.DeliveryTag, false, true);
+                await channel.BasicNackAsync(ea.DeliveryTag, false, true, stoppingToken);
             }
         };
         

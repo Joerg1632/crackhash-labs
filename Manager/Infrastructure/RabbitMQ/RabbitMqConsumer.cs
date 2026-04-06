@@ -29,6 +29,7 @@ public class RabbitMqConsumer : BackgroundService
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         logger.LogInformation("RabbitMqConsumer starting, connecting to {Host}", settings.Host);
+        
         var factory = new ConnectionFactory { HostName = settings.Host };
         connection = await factory.CreateConnectionAsync(stoppingToken);
         channel = await connection.CreateChannelAsync(cancellationToken: stoppingToken);
@@ -78,20 +79,20 @@ public class RabbitMqConsumer : BackgroundService
                 if (report != null)
                     await crackManagerService.ReportResultAsync(report.RequestId, report.FoundWords ?? []);
 
-                await channel.BasicAckAsync(ea.DeliveryTag, false);
+                await channel.BasicAckAsync(ea.DeliveryTag, false, stoppingToken);
                 logger.LogInformation("Acked message");
             }
             catch (Exception ex)
             {
                 logger.LogError(ex, "Failed to process result message");
-                await channel.BasicNackAsync(ea.DeliveryTag, false, true);
+                await channel.BasicNackAsync(ea.DeliveryTag, false, true, stoppingToken);
             }
         };
         
         await channel.BasicConsumeAsync(
             queue: settings.ResultsQueue,
             autoAck: false,
-            consumer: consumer);
+            consumer: consumer, cancellationToken: stoppingToken);
             
         await Task.Delay(Timeout.Infinite, stoppingToken);
     }
@@ -99,6 +100,7 @@ public class RabbitMqConsumer : BackgroundService
     public override async Task StopAsync(CancellationToken cancellationToken)
     {
         await base.StopAsync(cancellationToken);
+        
         if (channel != null) 
             await channel.CloseAsync(cancellationToken);
         if (connection != null) 

@@ -17,13 +17,9 @@ public class TaskSplitter
             if (count <= 0)
                 continue;
 
-            var task = new RangeTask
-            {
-                Start = currentStart,
-                Count = count
-            };
-            
+            var task = new RangeTask (currentStart, count);
             ranges.Add(task);
+            
             currentStart += count;
         }
         
