@@ -82,10 +82,10 @@ public class RabbitMqConsumer : BackgroundService
                     task.Alphabet);
 
                 await publisher.PublishResultAsync(new ReportDto
-                {
-                    RequestId = task.RequestId,
-                    FoundWords = foundWords
-                });
+                (
+                    RequestId : task.RequestId,
+                    FoundWords : foundWords
+                ));
 
                 await channel.BasicAckAsync(ea.DeliveryTag, false, stoppingToken);
 

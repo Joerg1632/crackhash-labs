@@ -45,12 +45,12 @@ public class RabbitMqPublisher : IDisposable
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"RabbitMQ not ready, attempt {i + 1}/10. Waiting 3s... {ex.Message}");
+                Console.WriteLine($"RabbitMQ not ready {ex.Message}");
                 Thread.Sleep(3000);
             }
         }
     
-        throw new Exception("Could not connect to RabbitMQ after 10 attempts");
+        throw new Exception("Could not connect to RabbitMQ");
     }
 
     public async Task PublishTaskAsync(IEnumerable<TaskMessage> tasks)
