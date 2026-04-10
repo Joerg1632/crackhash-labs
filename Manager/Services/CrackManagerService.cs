@@ -109,14 +109,20 @@ public class CrackManagerService : ICrackManagerService
     
     public async Task RecoverInProgressRequestsAsync()
     {
+        var inProgress = await repository.FindInProgressAsync();
+        if (!inProgress.Any())
+        {
+            logger.LogInformation("No in-progress requests, nothing to recover");
+            return;
+        }
+        
         var taskQueueEmpty = await publisher.IsTasksQueueEmptyAsync();
         if (!taskQueueEmpty)
         {
             logger.LogInformation("Tasks queue is not empty, workers are still processing");
             return;
         }
-        
-        var inProgress = await repository.FindInProgressAsync();
+
         foreach (var state in inProgress)
         {
             logger.LogInformation(
