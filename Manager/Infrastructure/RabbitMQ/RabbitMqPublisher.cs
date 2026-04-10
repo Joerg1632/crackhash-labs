@@ -11,9 +11,11 @@ public class RabbitMqPublisher : IDisposable
     private readonly IConnection connection;
     private readonly IChannel channel;
     private readonly RabbitMqSettings settings;
-
-    public RabbitMqPublisher(IOptions<RabbitMqSettings> options)
+    private readonly ILogger<RabbitMqPublisher> logger;
+    
+    public RabbitMqPublisher(IOptions<RabbitMqSettings> options, ILogger<RabbitMqPublisher> logger)
     {
+        this.logger = logger;
         settings = options.Value;
         var factory = new ConnectionFactory { HostName = settings.Host };
     
@@ -70,6 +72,21 @@ public class RabbitMqPublisher : IDisposable
                 basicProperties: props,
                 body: body);
         }
+    }
+    
+    public async Task<bool> IsTasksQueueEmptyAsync()
+    {
+        using var httpClient = new HttpClient();
+        httpClient.DefaultRequestHeaders.Add("Authorization", "Basic " +
+                                                              Convert.ToBase64String("guest:guest"u8.ToArray()));
+        
+        var response = await httpClient.GetStringAsync(
+            $"http://rabbitmq:15672/api/queues/%2F/{settings.TaskQueue}");
+        var queue = JsonSerializer.Deserialize<JsonElement>(response);
+        var messages = queue.GetProperty("messages").GetInt32();
+        
+        logger.LogInformation("Tasks queue has {Count} messages", messages);
+        return messages == 0;
     }
     
     public void Dispose()

@@ -14,7 +14,5 @@ public class RequestState
     public RequestStatus Status { get; set; } = RequestStatus.IN_PROGRESS;
     [BsonElement("FoundWords")]
     public List<string> FoundWords { get; set; } = new();
-    public DateTime CreatedAt { get; set; }
-    
     public int CompletedTasks { get; set; }
 }

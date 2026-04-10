@@ -1,6 +1,4 @@
-﻿using System.Text;
-using System.Text.Json;
-using Manager.Core.Tasks;
+﻿using Manager.Core.Tasks;
 using Manager.DTOs;
 using Manager.Enums;
 using Manager.Infrastructure.Mongo;
@@ -50,8 +48,7 @@ public class CrackManagerService : ICrackManagerService
             RequestId = requestId,
             Hash = request.Hash,
             MaxLength = request.MaxLength,
-            Status = RequestStatus.IN_PROGRESS,
-            CreatedAt = DateTime.UtcNow
+            Status = RequestStatus.IN_PROGRESS
         };
 
         await repository.InsertAsync(state);
@@ -101,7 +98,6 @@ public class CrackManagerService : ICrackManagerService
         await repository.UpdateAsync(requestId, words ?? []);
 
         state = await repository.GetAsync(requestId);
-    
         if (state!.CompletedTasks >= settings.TaskParts)
         {
             var uniqueWords = state.FoundWords.Distinct().ToList();
@@ -113,8 +109,14 @@ public class CrackManagerService : ICrackManagerService
     
     public async Task RecoverInProgressRequestsAsync()
     {
+        var taskQueueEmpty = await publisher.IsTasksQueueEmptyAsync();
+        if (!taskQueueEmpty)
+        {
+            logger.LogInformation("Tasks queue is not empty, workers are still processing");
+            return;
+        }
+        
         var inProgress = await repository.FindInProgressAsync();
-    
         foreach (var state in inProgress)
         {
             logger.LogInformation(
