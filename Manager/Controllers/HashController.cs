@@ -8,19 +8,16 @@ namespace Manager.Controllers;
 [Route("api/hash")]
 public class HashController : ControllerBase
 {
-    private readonly CrackManagerService _service;
+    private readonly ICrackManagerService service;
 
-    public HashController(CrackManagerService service) => _service = service;
+    public HashController(ICrackManagerService service) => this.service = service;
 
     [HttpPost("crack")]
     public IActionResult Crack([FromBody] CrackRequest request)
     {
-        var requestId = _service.StartCrack(request);
-
-        var crackRequestId = new CrackRequestResponse()
-        {
-            RequestId = requestId,
-        };
+        var requestId = service.StartCrack(request);
+        var crackRequestId = new CrackRequestResponse(requestId);
+        
         return Ok(crackRequestId);
     }
 
@@ -28,13 +25,9 @@ public class HashController : ControllerBase
     public IActionResult Status([FromQuery] string requestId)
     {
         
-        var (status, data) = _service.GetStatus(requestId);
-        
-        var crackStatus = new CrackStatusResponse()
-        {
-            Status = status,
-            Data = data
-        };
+        var (status, data) = service.GetStatus(requestId);
+        var crackStatus = new CrackStatusResponse(status,  data);
+
         return Ok(crackStatus);
     }
 }

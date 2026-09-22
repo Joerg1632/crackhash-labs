@@ -1,10 +1,11 @@
-﻿using Manager.Enums;
-
-namespace Manager.DTOs;
+﻿using Manager.DTOs;
+using Manager.Enums;
+namespace Manager.Models;
 using System.Collections.Concurrent;
 
 public class RequestState
 {
+    public string requestId { get; set; }
     public string Hash { get; set; } = string.Empty;
     public int MaxLength { get; set; }
     public RequestStatus Status { get; set; } = RequestStatus.IN_PROGRESS; 

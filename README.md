@@ -94,6 +94,6 @@ docker-compose up --build
 
 3. Доступ:
 
-- Менеджер: http://localhost:5284
+- Менеджер: http://localhost:5000
 
 - Воркеры: доступны внутри сети Docker Compose, связываются с менеджером по сервисным именам.
